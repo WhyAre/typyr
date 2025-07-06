@@ -1,8 +1,8 @@
 [package]
-name = "yr-keys"
+name = "typyr"
 version = "0.1.0"
 edition = "2024"
-default-run = "yr-keys"
+default-run = "typyr"
 
 [dependencies]
 anyhow = "1.0.98"
