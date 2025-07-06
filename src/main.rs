@@ -88,9 +88,11 @@ fn main() -> Result<()> {
             writer.write_all(&buf[..n]).unwrap();
             writer.flush().unwrap();
 
-            let out_str: String = buf[..n].iter().map(pretty_display).collect();
-            write!(file, "{out_str}").unwrap();
-            file.flush().unwrap();
+            if n <= 5 {
+                let out_str: String = buf[..n].iter().map(pretty_display).collect();
+                write!(file, "{out_str}").unwrap();
+                file.flush().unwrap();
+            }
         }
     });
 
