@@ -77,7 +77,6 @@ fn main() -> Result<()> {
             .create(true)
             .open("/tmp/file.txt")
             .unwrap();
-        let mut tmux_refresh = Command::new("tmux");
 
         let stdin = io::stdin();
         let mut handle = stdin.lock();
@@ -92,12 +91,6 @@ fn main() -> Result<()> {
             let out_str: String = buf[..n].iter().map(pretty_display).collect();
             write!(file, "{out_str}").unwrap();
             file.flush().unwrap();
-
-            tmux_refresh
-                .arg("refresh-client")
-                .arg("-S")
-                .output()
-                .unwrap();
         }
     });
 
