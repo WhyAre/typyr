@@ -1,3 +1,4 @@
+use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::thread;
 
@@ -34,7 +35,7 @@ fn spawn_shell() -> Result<(
     })?;
 
     // Spawn a shell into the pty
-    let cmd = CommandBuilder::new("bash");
+    let cmd = CommandBuilder::new("tmux");
     let child = pair.slave.spawn_command(cmd)?;
 
     // Read and parse output from the pty with reader
@@ -51,12 +52,19 @@ fn main() -> Result<()> {
 
     let (mut child, mut reader, mut writer) = spawn_shell()?;
 
-    let WindowSize { rows, columns, .. } = window_size()?;
+    // let WindowSize { rows, columns, .. } = window_size()?;
 
-    // let mut stdout = io::stdout();
-    // execute!(stdout, SetSize(columns, rows - 19))?;
+    let mut stdout = io::stdout();
+    execute!(stdout, Clear(ClearType::All), MoveTo(0, 0))?;
 
     let _ = thread::spawn(move || {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open("/tmp/file.txt")
+            .unwrap();
+
         let stdin = io::stdin();
         let mut handle = stdin.lock();
         let mut buf = [0; 1024];
@@ -66,6 +74,9 @@ fn main() -> Result<()> {
             }
             writer.write_all(&buf[..n]).unwrap();
             writer.flush().unwrap();
+
+            write!(file, "{:?}", &buf[..n]).unwrap();
+            file.flush().unwrap();
         }
     });
 
