@@ -402,6 +402,7 @@ dependencies = [
  "crossterm",
  "itertools",
  "portable-pty",
+ "shell-words",
 ]
 
 [[package]]

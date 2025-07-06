@@ -1,8 +1,8 @@
 use crossterm::cursor::MoveTo;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
-use itertools::Itertools;
 use portable_pty::{Child, CommandBuilder, PtySize, native_pty_system};
+use shell_words::split;
 use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::process::Command;
@@ -20,7 +20,18 @@ fn pretty_display(code: &u8) -> String {
         _ => format!("<0x{code:02X}>"),
     }
 }
-
+fn parse_command(cmd: &str) -> CommandBuilder {
+    let mut parts = split(cmd).expect("Invalid shell command");
+    let prog = parts.remove(0);
+    let pwd = std::env::var("PWD").unwrap();
+    let mut cmd = CommandBuilder::new(prog);
+    cmd.args(parts);
+    cmd.cwd(pwd);
+    for (key, value) in std::env::vars() {
+        cmd.env(&key, &value);
+    }
+    cmd
+}
 #[allow(clippy::type_complexity)]
 fn spawn_shell(
     cmd: &str,
@@ -46,7 +57,7 @@ fn spawn_shell(
     })?;
 
     // Spawn a shell into the pty
-    let cmd = CommandBuilder::new(cmd);
+    let cmd = parse_command(cmd);
     let child = pair.slave.spawn_command(cmd)?;
 
     // Read and parse output from the pty with reader
@@ -88,7 +99,7 @@ fn main() -> Result<()> {
             writer.write_all(&buf[..n]).unwrap();
             writer.flush().unwrap();
 
-            if n <= 5 {
+            if n < 3 {
                 let out_str: String = buf[..n].iter().map(pretty_display).collect();
                 write!(file, "{out_str}").unwrap();
                 file.flush().unwrap();
