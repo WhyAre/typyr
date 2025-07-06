@@ -1,7 +1,12 @@
-use std::io::{self, Read, Write, stdin, stdout};
+use std::io::{self, Read, Write};
 use std::thread;
 
-use crossterm::event::{Event, read};
+use crossterm::cursor::{MoveTo, MoveUp, RestorePosition, SavePosition};
+use crossterm::execute;
+use crossterm::style::{Print, ResetColor};
+use crossterm::terminal::{
+    Clear, ClearType, ScrollDown, ScrollUp, SetSize, WindowSize, window_size,
+};
 use portable_pty::{Child, CommandBuilder, PtySize, native_pty_system};
 
 use anyhow::Result;
@@ -17,7 +22,7 @@ fn spawn_shell() -> Result<(
     // Create a new pty
     let window_size = crossterm::terminal::window_size()?;
     let pair = pty_system.openpty(PtySize {
-        rows: window_size.rows - 10,
+        rows: window_size.rows,
         cols: window_size.columns,
         // Not all systems support pixel_width, pixel_height,
         // but it is good practice to set it to something
@@ -46,7 +51,12 @@ fn main() -> Result<()> {
 
     let (mut child, mut reader, mut writer) = spawn_shell()?;
 
-    let input_thread = thread::spawn(move || {
+    let WindowSize { rows, columns, .. } = window_size()?;
+
+    // let mut stdout = io::stdout();
+    // execute!(stdout, SetSize(columns, rows - 19))?;
+
+    let _ = thread::spawn(move || {
         let stdin = io::stdin();
         let mut handle = stdin.lock();
         let mut buf = [0; 1024];
@@ -60,15 +70,27 @@ fn main() -> Result<()> {
     });
 
     // Read output from PTY and print it to screen
-    let output_thread = thread::spawn(move || {
+    let _ = thread::spawn(move || {
         let mut stdout = io::stdout().lock();
         let mut buf = [0; 1024];
         while let Ok(n) = reader.read(&mut buf) {
             if n == 0 {
                 continue;
             }
+
             stdout.write_all(&buf[..n]).unwrap();
             stdout.flush().unwrap();
+
+            // execute!(
+            //     stdout,
+            //     // SavePosition,
+            //     // MoveTo(0, rows - 1), // Move to bottom-left
+            //     // ResetColor,
+            //     // Clear(ClearType::CurrentLine),
+            //     // Print("Y".repeat(columns as usize)),
+            //     // RestorePosition,
+            // )
+            // .unwrap();
         }
     });
 
@@ -79,4 +101,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
