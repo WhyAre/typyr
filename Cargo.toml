@@ -7,9 +7,14 @@ default-run = "typyr"
 [dependencies]
 anyhow = "1.0.98"
 crossterm = "0.29.0"
+futures = "0.3.31"
 itertools = "0.14.0"
 portable-pty = "0.9.0"
+ratatui = { version = "0.29.0", features = ["termwiz"] }
 shell-words = "1.1.0"
+tokio = { version = "1.46.1", features = ["full"] }
+tui-term = { git = "https://github.com/whyare/tui-term", version = "0.2.0" }
+vt100 = { git = "https://github.com/WhyAre/vt100", version = "0.16.1" }
 
 [[bin]]
 name = "test"

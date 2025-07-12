@@ -1,0 +1,62 @@
+KeyEvent: KeyEvent { key: Char('l'), modifiers: NONE }
+Char('l')
+KeyEvent: KeyEvent { key: Char('s'), modifiers: NONE }
+Char('s')
+KeyEvent: KeyEvent { key: Enter, modifiers: NONE }
+Enter
+KeyEvent: KeyEvent { key: Char('r'), modifiers: CTRL }
+Char('r')
+KeyEvent: KeyEvent { key: Char('['), modifiers: ALT }
+Char('[')
+KeyEvent: KeyEvent { key: Char('7'), modifiers: NONE }
+Char('7')
+KeyEvent: KeyEvent { key: Char(';'), modifiers: NONE }
+Char(';')
+KeyEvent: KeyEvent { key: Char('1'), modifiers: NONE }
+Char('1')
+KeyEvent: KeyEvent { key: Char('R'), modifiers: NONE }
+Char('R')
+KeyEvent: KeyEvent { key: Char('c'), modifiers: CTRL }
+Char('c')
+KeyEvent: KeyEvent { key: Char('r'), modifiers: CTRL }
+Char('r')
+KeyEvent: KeyEvent { key: Char('['), modifiers: ALT }
+Char('[')
+KeyEvent: KeyEvent { key: Char('6'), modifiers: NONE }
+Char('6')
+KeyEvent: KeyEvent { key: Char(';'), modifiers: NONE }
+Char(';')
+KeyEvent: KeyEvent { key: Char('1'), modifiers: NONE }
+Char('1')
+KeyEvent: KeyEvent { key: Char('R'), modifiers: NONE }
+Char('R')
+KeyEvent: KeyEvent { key: Char('c'), modifiers: CTRL }
+Char('c')
+KeyEvent: KeyEvent { key: Char('r'), modifiers: CTRL }
+Char('r')
+KeyEvent: KeyEvent { key: Char('['), modifiers: ALT }
+Char('[')
+KeyEvent: KeyEvent { key: Char('6'), modifiers: NONE }
+Char('6')
+KeyEvent: KeyEvent { key: Char(';'), modifiers: NONE }
+Char(';')
+KeyEvent: KeyEvent { key: Char('1'), modifiers: NONE }
+Char('1')
+KeyEvent: KeyEvent { key: Char('R'), modifiers: NONE }
+Char('R')
+KeyEvent: KeyEvent { key: Char('c'), modifiers: CTRL }
+Char('c')
+KeyEvent: KeyEvent { key: Char('p'), modifiers: CTRL }
+Char('p')
+KeyEvent: KeyEvent { key: Char('u'), modifiers: CTRL }
+Char('u')
+KeyEvent: KeyEvent { key: Char('e'), modifiers: NONE }
+Char('e')
+KeyEvent: KeyEvent { key: Char('x'), modifiers: NONE }
+Char('x')
+KeyEvent: KeyEvent { key: Char('i'), modifiers: NONE }
+Char('i')
+KeyEvent: KeyEvent { key: Char('t'), modifiers: NONE }
+Char('t')
+KeyEvent: KeyEvent { key: Enter, modifiers: NONE }
+Enter
