@@ -1,0 +1,21 @@
+[package]
+name = "typyr"
+version = "0.1.0"
+edition = "2024"
+default-run = "typyr"
+
+[dependencies]
+anyhow = "1.0.98"
+futures = "0.3.31"
+itertools = "0.14.0"
+portable-pty = "0.9.0"
+ratatui = { version = "0.29.0", features = ["termwiz"] }
+shell-words = "1.1.0"
+tokio = { version = "1.46.1", features = ["full"] }
+tokio-util = "0.7.15"
+tui-term = "0.2.0"
+vt100 = "0.15.2"
+
+[[bin]]
+name = "test"
+path = "./src/main_1.rs"
