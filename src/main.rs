@@ -32,7 +32,6 @@ use ratatui::{
     },
 };
 use ratatui::{prelude::CrosstermBackend, termwiz::input::KeyCode};
-use tokio_util::sync::CancellationToken;
 use tui_term::widget::PseudoTerminal;
 use vt100::Screen;
 
@@ -161,7 +160,6 @@ fn spawn_command(cmd: &str) -> anyhow::Result<Idk> {
 #[derive(Debug)]
 enum UIEvent {
     Update,
-    Kill,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -193,8 +191,7 @@ fn main() -> anyhow::Result<()> {
 
     // drop(t1);
 
-    let cancellation_token = CancellationToken::new();
-    let (tx, mut rx) = mpsc::channel();
+    let (tx, rx) = mpsc::channel();
 
     let parser = Arc::new(RwLock::new(vt100::Parser::new(size.rows, size.cols, 0)));
     let history = Arc::new(RwLock::new(History::new(size.cols as usize)));
@@ -230,10 +227,6 @@ fn main() -> anyhow::Result<()> {
     //Updates the UI
     thread::spawn(move || {
         while let Ok(event) = rx.recv() {
-            if matches!(event, UIEvent::Kill) {
-                break;
-            }
-
             debug_assert!(matches!(event, UIEvent::Update));
 
             let parser_read = parser.read().expect("Cannot read parser");
