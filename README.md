@@ -2,7 +2,7 @@
 
 Shows your key presses on the command line (look at the bottom row of the video)
 
-[![asciicast](https://asciinema.org/a/QQ9ppBQFWE1s60UPbQReOOt2R.svg)](https://asciinema.org/a/QQ9ppBQFWE1s60UPbQReOOt2R)
+[![asciicast](https://asciinema.org/a/XoDe8hDYMNVcHvrkyzK4djXSo.svg)](https://asciinema.org/a/XoDe8hDYMNVcHvrkyzK4djXSo)
 
 ## Usage
 

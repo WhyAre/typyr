@@ -207,7 +207,7 @@ fn main() -> anyhow::Result<()> {
     let (tx, rx) = mpsc::channel();
 
     let parser = Arc::new(RwLock::new(vt100::Parser::new(size.rows, size.cols, 0)));
-    let history = Arc::new(RwLock::new(History::new(size.cols as usize)));
+    let history = Arc::new(RwLock::new(History::new(size.cols as usize - 2))); // -2 for 1 row of margins on each side
 
     // Read from stdin, and forward into the application
     {
@@ -340,6 +340,6 @@ fn ui(f: &mut Frame, screen: &Screen, history: String) {
 
     let keystrokes = Paragraph::new(history)
         .style(Style::default().add_modifier(Modifier::REVERSED))
-        .alignment(Alignment::Right);
+        .alignment(Alignment::Center);
     f.render_widget(keystrokes, chunks[1]);
 }
