@@ -32,9 +32,11 @@ use ratatui::{
     },
 };
 use ratatui::{prelude::CrosstermBackend, termwiz::input::KeyCode};
+use tracing::{Level, event};
 use tui_term::widget::PseudoTerminal;
 use vt100::Screen;
 
+#[derive(Debug)]
 struct History {
     history: VecDeque<KeyEvent>,
     cur_width: usize,
@@ -163,6 +165,22 @@ enum UIEvent {
 }
 
 fn main() -> anyhow::Result<()> {
+    // Set up logging
+    let subscriber = {
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("typyr.log")
+            .expect("Cannot open log file");
+
+        tracing_subscriber::fmt()
+            .with_ansi(false)
+            .with_writer(file)
+            .finish()
+    };
+
+    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
+
     execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
 
@@ -172,12 +190,6 @@ fn main() -> anyhow::Result<()> {
     // let mut t1 =
     //     termwiz::terminal::new_terminal(termwiz::caps::Capabilities::new_from_env().unwrap())
     //         .unwrap();
-
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("typyr.log")
-        .expect("Cannot open log file");
 
     let Ok(Idk {
         mut reader,
@@ -267,6 +279,8 @@ fn run(
         else {
             continue;
         };
+
+        event!(Level::INFO, "{:?}", event);
 
         let mut history = history
             .write()
