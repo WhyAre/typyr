@@ -11,7 +11,6 @@ use std::{
     time::Duration,
 };
 
-use anyhow::bail;
 use itertools::Itertools;
 use portable_pty::{Child, CommandBuilder, PtySize};
 use ratatui::{
@@ -172,20 +171,21 @@ fn main() -> anyhow::Result<()> {
     let cmd = std::env::args().nth(1).unwrap_or("bash".to_string());
 
     // Set up logging
-    let subscriber = {
+    let enable_logging = false;
+    if enable_logging {
         let file = OpenOptions::new()
             .create(true)
             .append(true)
             .open("typyr.log")
             .expect("Cannot open log file");
 
-        tracing_subscriber::fmt()
+        let subscriber = tracing_subscriber::fmt()
             .with_ansi(false)
             .with_writer(file)
-            .finish()
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("Unable to set global subscriber");
     };
-
-    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
 
     let split = split(&cmd)?;
     let Idk {
