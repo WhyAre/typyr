@@ -20,6 +20,9 @@ ratatui + tui_term + portable_pty
 
 ## Limitations
 
+It probably lacks more things,
+but currently it works (well enough) for my own use case.
+
 - [ ] Lack of scroll support
      - Since application opens in alternate screen,
        the app itself needs to handle scroll (which I'm too lazy to do, for now)
