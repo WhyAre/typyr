@@ -11,6 +11,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::bail;
 use itertools::Itertools;
 use portable_pty::{Child, CommandBuilder, PtySize};
 use ratatui::{
@@ -32,6 +33,7 @@ use ratatui::{
     },
 };
 use ratatui::{prelude::CrosstermBackend, termwiz::input::KeyCode};
+use shell_words::split;
 use tracing::{Level, event};
 use tui_term::widget::PseudoTerminal;
 use vt100::Screen;
@@ -126,12 +128,13 @@ struct Idk {
     size: PtySize,
 }
 
-fn spawn_command(cmd: &str) -> anyhow::Result<Idk> {
+fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Idk> {
     let pty_system = portable_pty::native_pty_system();
 
     let cwd = std::env::current_dir()?;
     let mut cmd = CommandBuilder::new(cmd);
     cmd.cwd(cwd);
+    cmd.args(args);
 
     let window_size = window_size().expect("Cannot get window size");
 
@@ -165,6 +168,9 @@ enum UIEvent {
 }
 
 fn main() -> anyhow::Result<()> {
+    // Read the argument
+    let cmd = std::env::args().nth(1).unwrap_or("bash".to_string());
+
     // Set up logging
     let subscriber = {
         let file = OpenOptions::new()
@@ -181,27 +187,22 @@ fn main() -> anyhow::Result<()> {
 
     tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
 
+    let split = split(&cmd)?;
+    let Idk {
+        mut reader,
+        writer,
+        mut process,
+        size,
+    } = spawn_command(
+        &split[0],
+        &split.iter().skip(1).map(|c| c.as_ref()).collect::<Vec<_>>(),
+    )?;
+
     execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
 
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = ratatui::Terminal::new(backend)?;
-
-    // let mut t1 =
-    //     termwiz::terminal::new_terminal(termwiz::caps::Capabilities::new_from_env().unwrap())
-    //         .unwrap();
-
-    let Ok(Idk {
-        mut reader,
-        writer,
-        mut process,
-        size,
-    }) = spawn_command("bash")
-    else {
-        panic!("Bruh");
-    };
-
-    // drop(t1);
 
     let (tx, rx) = mpsc::channel();
 
