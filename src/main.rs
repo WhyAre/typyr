@@ -12,7 +12,7 @@ use std::{
 };
 
 use itertools::Itertools;
-use portable_pty::{Child, CommandBuilder, PtySize};
+use portable_pty::{Child, CommandBuilder, MasterPty, PtySize};
 use ratatui::{
     Frame,
     crossterm::{
@@ -33,7 +33,7 @@ use ratatui::{
 };
 use ratatui::{prelude::CrosstermBackend, termwiz::input::KeyCode};
 use shell_words::split;
-use tracing::{info, level_filters::LevelFilter};
+use tracing::{debug, info, level_filters::LevelFilter};
 use tui_term::widget::PseudoTerminal;
 use vt100::Screen;
 
@@ -121,8 +121,7 @@ impl History {
 }
 
 struct Pty {
-    reader: Box<dyn Read + Send + 'static>,
-    writer: Box<dyn Write + Send + 'static>,
+    master: Box<dyn MasterPty>,
     process: Box<dyn Child + Send + 'static>,
     size: PtySize,
 }
@@ -151,14 +150,9 @@ fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Pty> {
     // Wait for the child to complete
     let child = pair.slave.spawn_command(cmd)?;
 
-    let reader = pair.master.try_clone_reader()?;
-
-    let writer = pair.master.take_writer().unwrap();
-
     Ok(Pty {
+        master: pair.master,
         process: child,
-        reader,
-        writer,
         size,
     })
 }
@@ -227,14 +221,14 @@ fn main() -> anyhow::Result<()> {
 
     let split = split(&cmd)?;
     let Pty {
-        mut reader,
-        writer,
+        master,
         mut process,
         size,
     } = spawn_command(
         &split[0],
         &split.iter().skip(1).map(|c| c.as_ref()).collect::<Vec<_>>(),
     )?;
+    let mut reader = master.try_clone_reader().expect("Cannot get reader");
 
     execute!(stdout(), EnterAlternateScreen)?;
     enable_raw_mode()?;
@@ -251,7 +245,8 @@ fn main() -> anyhow::Result<()> {
     {
         let tx = tx.clone();
         let history = history.clone();
-        thread::spawn(|| run(writer, tx, history));
+        let parser = parser.clone();
+        thread::spawn(|| run(master, tx, parser, history));
     }
 
     // Read from stdout, and forward into the screen
@@ -302,13 +297,16 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn run(
-    mut sender: Box<dyn Write + Send + 'static>,
+    master: Box<dyn MasterPty>,
     tx: Sender<UIEvent>,
+    parser: Arc<RwLock<vt100::Parser>>,
     history: Arc<RwLock<History>>,
 ) {
     let mut t1 =
         termwiz::terminal::new_terminal(termwiz::caps::Capabilities::new_from_env().unwrap())
             .unwrap();
+
+    let mut sender = master.take_writer().expect("Cannot get writer");
 
     // Busy waiting
     loop {
@@ -321,43 +319,65 @@ fn run(
 
         info!("{event:?}");
 
-        let mut history = history
-            .write()
-            .expect("Cannot get writer to history object");
         // Process event
-        #[allow(clippy::collapsible_match)]
-        if let InputEvent::Key(event) = event {
-            if event
-                == (KeyEvent {
-                    key: KeyCode::Char('\u{1c}'),
-                    modifiers: Modifiers::NONE,
-                })
-            {
-                history.clear();
+        match event {
+            InputEvent::Key(event) => {
+                let mut history = history
+                    .write()
+                    .expect("Cannot get writer to history object");
+
+                if event
+                    == (KeyEvent {
+                        key: KeyCode::Char('\u{1c}'),
+                        modifiers: Modifiers::NONE,
+                    })
+                {
+                    history.clear();
+                    tx.send(UIEvent::Update).expect("Fail to send UIEvent");
+                    continue;
+                }
+
+                history.push(event.clone());
                 tx.send(UIEvent::Update).expect("Fail to send UIEvent");
-                continue;
+
+                let key_encoding = event
+                    .key
+                    .encode(
+                        event.modifiers,
+                        termwiz::input::KeyCodeEncodeModes {
+                            encoding: termwiz::input::KeyboardEncoding::Xterm,
+                            application_cursor_keys: false,
+                            newline_mode: false,
+                            modify_other_keys: None,
+                        },
+                        true,
+                    )
+                    .unwrap();
+
+                sender
+                    .write_all(key_encoding.as_bytes())
+                    .expect("Fail to write to pty stdin");
+                sender.flush().unwrap();
             }
+            InputEvent::Resized { cols, rows } => {
+                let (rows, cols) = ((rows - 1) as u16, cols as u16); // Always remember size for my bottom bar
+                let cursize = master.get_size().expect("Cannot get size");
 
-            history.push(event.clone());
-            tx.send(UIEvent::Update).expect("Fail to send UIEvent");
+                debug!("Resized to {rows:?} {cols:?}");
 
-            let key_encoding = event
-                .key
-                .encode(
-                    event.modifiers,
-                    termwiz::input::KeyCodeEncodeModes {
-                        encoding: termwiz::input::KeyboardEncoding::Xterm,
-                        application_cursor_keys: false,
-                        newline_mode: false,
-                        modify_other_keys: None,
-                    },
-                    true,
-                )
-                .unwrap();
-            sender
-                .write_all(key_encoding.as_bytes())
-                .expect("Fail to write to pty stdin");
-            sender.flush().unwrap();
+                master
+                    .resize(PtySize {
+                        rows,
+                        cols,
+                        ..cursize
+                    })
+                    .expect("Cannot resize");
+                parser
+                    .write()
+                    .expect("Cannot get parser")
+                    .set_size(rows, cols);
+            }
+            _ => {}
         }
     }
 }
