@@ -33,7 +33,7 @@ use ratatui::{
 };
 use ratatui::{prelude::CrosstermBackend, termwiz::input::KeyCode};
 use shell_words::split;
-use tracing::{Level, event};
+use tracing::{info, level_filters::LevelFilter};
 use tui_term::widget::PseudoTerminal;
 use vt100::Screen;
 
@@ -137,6 +137,8 @@ fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Idk> {
 
     let window_size = window_size().expect("Cannot get window size");
 
+    info!("{window_size:?}");
+
     let size = PtySize {
         rows: window_size.rows - 1,
         cols: window_size.columns,
@@ -171,7 +173,7 @@ use clap::{Parser, ValueEnum};
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Set the log level
-    #[arg(short = 'l', long = "log-level", value_enum, default_value = "info")]
+    #[arg(short = 'l', long = "log-level", value_enum, default_value = "off")]
     log_level: LogLevel,
 
     /// Command to execute
@@ -181,15 +183,17 @@ struct Cli {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum LogLevel {
+    Off,
     Debug,
     Info,
     Warn,
     Error,
 }
 
-impl From<LogLevel> for Level {
+impl From<LogLevel> for LevelFilter {
     fn from(value: LogLevel) -> Self {
         match value {
+            LogLevel::Off => Self::OFF,
             LogLevel::Debug => Self::DEBUG,
             LogLevel::Info => Self::INFO,
             LogLevel::Warn => Self::WARN,
@@ -208,21 +212,18 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or("bash".to_string());
 
     // Set up logging
-    let enable_logging = false;
-    if enable_logging {
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("typyr.log")
-            .expect("Cannot open log file");
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("typyr.log")
+        .expect("Cannot open log file");
 
-        let subscriber = tracing_subscriber::fmt()
-            .with_ansi(false)
-            .with_writer(file)
-            .finish();
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("Unable to set global subscriber");
-    };
+    let subscriber = tracing_subscriber::fmt()
+        .with_ansi(false)
+        .with_writer(file)
+        .with_max_level(args.log_level)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
 
     let split = split(&cmd)?;
     let Idk {
@@ -318,7 +319,7 @@ fn run(
             continue;
         };
 
-        event!(Level::INFO, "{:?}", event);
+        info!("{event:?}");
 
         let mut history = history
             .write()
