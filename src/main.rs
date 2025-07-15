@@ -165,10 +165,47 @@ fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Idk> {
 enum UIEvent {
     Update,
 }
+use clap::{Parser, ValueEnum};
+
+#[derive(clap::Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Set the log level
+    #[arg(short = 'l', long = "log-level", value_enum, default_value = "info")]
+    log_level: LogLevel,
+
+    /// Command to execute
+    #[arg()]
+    cmd: Option<String>,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl From<LogLevel> for Level {
+    fn from(value: LogLevel) -> Self {
+        match value {
+            LogLevel::Debug => Self::DEBUG,
+            LogLevel::Info => Self::INFO,
+            LogLevel::Warn => Self::WARN,
+            LogLevel::Error => Self::ERROR,
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
+    let args = Cli::parse();
+
     // Read the argument
-    let cmd = std::env::args().nth(1).unwrap_or("bash".to_string());
+    let cmd = args
+        .cmd
+        .or_else(|| std::env::var("SHELL").ok())
+        .unwrap_or("bash".to_string());
 
     // Set up logging
     let enable_logging = false;
