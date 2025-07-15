@@ -120,14 +120,14 @@ impl History {
     }
 }
 
-struct Idk {
+struct Pty {
     reader: Box<dyn Read + Send + 'static>,
     writer: Box<dyn Write + Send + 'static>,
     process: Box<dyn Child + Send + 'static>,
     size: PtySize,
 }
 
-fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Idk> {
+fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Pty> {
     let pty_system = portable_pty::native_pty_system();
 
     let cwd = std::env::current_dir()?;
@@ -155,7 +155,7 @@ fn spawn_command(cmd: &str, args: &[&str]) -> anyhow::Result<Idk> {
 
     let writer = pair.master.take_writer().unwrap();
 
-    Ok(Idk {
+    Ok(Pty {
         process: child,
         reader,
         writer,
@@ -226,7 +226,7 @@ fn main() -> anyhow::Result<()> {
     tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
 
     let split = split(&cmd)?;
-    let Idk {
+    let Pty {
         mut reader,
         writer,
         mut process,
