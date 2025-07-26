@@ -81,14 +81,17 @@ impl History {
     fn prettify_keycode(e: &KeyEvent) -> String {
         let KeyEvent { key, modifiers } = e;
 
+        let mut flags = Vec::new();
+
         let key = match key {
-            KeyCode::Char(c) => {
-                if *c == ' ' {
+            KeyCode::Char(c) => match c {
+                ' ' => "\u{2423}".to_string(),
+                '\0' => {
+                    flags.push("C");
                     "\u{2423}".to_string()
-                } else {
-                    c.to_string()
                 }
-            }
+                _ => c.to_string(),
+            },
             KeyCode::Backspace => "BS".to_string(),
             KeyCode::Enter => "CR".to_string(),
             KeyCode::Escape => "Esc".to_string(),
@@ -98,8 +101,6 @@ impl History {
             KeyCode::DownArrow => "Down".to_string(),
             _ => format!("{key:?}"),
         };
-
-        let mut flags = Vec::new();
 
         if modifiers.contains(Modifiers::CTRL) {
             flags.push("C");
